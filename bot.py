@@ -743,21 +743,33 @@ async def error_handler(update: object, context: CallbackContext):
         except TelegramError:
             pass
 
-# --------------------- ГЛАВНАЯ ФУНКЦИЯ ---------------------
+# --------------------- ГЛАВНАЯ ФУНКЦИЯ С WEBHOOK ---------------------
 def main():
     logger.info("Запуск бота...")
+    
+    # Создаём приложение с токеном
     application = Application.builder().token(BOT_TOKEN).build()
 
+    # Обработчики команд и сообщений
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("admin", admin_menu))
     application.add_handler(CallbackQueryHandler(callback_handler))
     application.add_handler(MessageHandler(filters.CONTACT, contact_handler))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_handler))
 
+    # Глобальный обработчик ошибок
     application.add_error_handler(error_handler)
 
-    application.run_polling()
-    logger.info("Бот остановлен.")
+    # Настройка Webhook
+    PORT = int(os.environ.get("PORT", "8443"))  # Порт, который слушает сервер
+    WEBHOOK_URL = f"https://{os.environ.get('RENDER_EXTERNAL_URL')}"  # Внешний URL от Render
 
-if __name__ == "__main__":
-    main()
+    # Запуск Webhook
+    application.run_webhook(
+        listen="0.0.0.0",         # Слушать на всех интерфейсах
+        port=PORT,               # Указываем порт
+        url_path="",             # Пусть оставляем пустым
+        webhook_url=WEBHOOK_URL  # Полный URL для Webhook
+    )
+    logger.info("Бот работает через Webhook.")
+
