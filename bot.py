@@ -746,8 +746,8 @@ async def error_handler(update: object, context: CallbackContext):
 # --------------------- ГЛАВНАЯ ФУНКЦИЯ С WEBHOOK ---------------------
 def main():
     logger.info("Запуск бота...")
-    
-    # Создаём приложение с токеном
+
+    # Создание приложения
     application = Application.builder().token(BOT_TOKEN).build()
 
     # Обработчики команд и сообщений
@@ -761,15 +761,21 @@ def main():
     application.add_error_handler(error_handler)
 
     # Настройка Webhook
-    PORT = int(os.environ.get("PORT", "8443"))  # Порт, который слушает сервер
-    WEBHOOK_URL = f"https://{os.environ.get('RENDER_EXTERNAL_URL')}"  # Внешний URL от Render
+    PORT = int(os.environ.get("PORT", "8443"))  # Порт для работы
+    RENDER_EXTERNAL_URL = os.environ.get("RENDER_EXTERNAL_URL")  # Получение URL от Render
+
+    if not RENDER_EXTERNAL_URL:
+        logger.error("RENDER_EXTERNAL_URL не задан. Убедитесь, что Render передаёт переменную окружения.")
+        return
+
+    WEBHOOK_URL = f"https://{RENDER_EXTERNAL_URL}"
 
     # Запуск Webhook
     application.run_webhook(
-        listen="0.0.0.0",         # Слушать на всех интерфейсах
-        port=PORT,               # Указываем порт
-        url_path="",             # Пусть оставляем пустым
-        webhook_url=WEBHOOK_URL  # Полный URL для Webhook
+        listen="0.0.0.0",  # Слушать на всех интерфейсах
+        port=PORT,  # Указанный порт
+        url_path="",  # Пустой путь для Webhook
+        webhook_url=WEBHOOK_URL,  # Полный URL для Webhook
     )
-    logger.info("Бот работает через Webhook.")
+    logger.info(f"Бот успешно запущен через Webhook: {WEBHOOK_URL}")
 
