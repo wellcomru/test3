@@ -2,6 +2,7 @@ import logging
 import asyncio
 import aiohttp
 import re
+import os  # <-- Добавили import os
 from typing import Dict
 
 from telegram import (
@@ -33,7 +34,9 @@ logger.addHandler(handler)
 
 # --------------------- КОНСТАНТЫ ---------------------
 APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzLP6DDjRi6R6UEO4PAv1e5MM6Wy42BeTVnqGqwIvO23sghquPqtRzMtzlJrVznQpqb/exec"  # <-- Укажите ваш URL
-BOT_TOKEN = "7507339261:AAFCLBJT7m8jHMPxKcpTqpWkMaXQbbwWRks"                                            # <-- Укажите ваш токен
+
+# Вместо жёсткого BOT_TOKEN — читаем из переменных окружения, при необходимости оставляем fallback:
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "YOUR_FALLBACK_TOKEN")  # <-- Теперь считываем токен из ENV
 
 GROUP_CHAT_ID = -1002438237062      # ID вашей группы/супергруппы
 ADMIN_CHAT_IDS = [418838097, 216931773]  # Список chat_id админов
@@ -120,7 +123,7 @@ RULES_TEXT = (
 WELCOME_TEXT = (
     "Добро пожаловать в комьюнити Event_Irkutsk!\n"
     "Если наш чат окажется для Вас полезным и Вы будете регулярно находить заказы, зарабатывать и решать свои вопросы, "
-    "мы будем признательны Вашей финансовой поддержке в любом эквиваленте. Ваши донаты позволят нам "
+    "мы будем признательны Вашей финансовой поддержке в любом эквивалente. Ваши донаты позволят нам "
     "осуществлять администрирование площадки, а также организовывать различные события для индустрии.\n"
     "⚡️⚡️⚡️⚡️⚡️⚡️⚡️⚡️⚡️⚡️⚡️\n"
     "ВЫ МОЖЕТЕ ПЕРЕВЕСТИ ЛЮБУЮ СУММУ ПО ССЫЛКЕ\n"
@@ -471,7 +474,7 @@ async def callback_handler(update: Update, context: CallbackContext):
 
     # --- Обработка нажатия "Начать регистрацию" после приветствия ---
     if state == "greeting_shown" and data == "start_registration":
-        # Переходим к отображению правил (ранее было в /start)
+        # Переходим к отображению правил
         rules_text = RULES_TEXT.replace("{name}", context.user_data["name"])
         await query.message.reply_text(
             rules_text,
@@ -482,7 +485,7 @@ async def callback_handler(update: Update, context: CallbackContext):
         context.user_data["state"] = "waiting_for_rules_confirmation"
         return
 
-    # 2. Подтверждение ознакомления с правилами
+    # Подтверждение ознакомления с правилами
     if state == "waiting_for_rules_confirmation" and data == "rules_confirmed":
         # Изначально пользователь не выбрал ничего
         context.user_data["selected_fields"] = []
@@ -495,7 +498,7 @@ async def callback_handler(update: Update, context: CallbackContext):
         context.user_data["state"] = "waiting_for_field"
         return
 
-    # 3. Множественный выбор поля (сферы)
+    # Множественный выбор поля (сферы)
     if state == "waiting_for_field" and data.startswith("field_toggle_"):
         try:
             idx = int(data.split("_")[-1])
@@ -518,7 +521,7 @@ async def callback_handler(update: Update, context: CallbackContext):
         )
         return
 
-    # 4. Пользователь закончил выбор сфер
+    # Пользователь закончил выбор сфер
     if state == "waiting_for_field" and data == "fields_done":
         selected = context.user_data.get("selected_fields", [])
         if not selected:
@@ -761,7 +764,7 @@ def main():
     application.add_error_handler(error_handler)
 
     # Настройка Webhook
-    PORT = int(os.environ.get("PORT", "8443"))  # Порт для работы
+    PORT = int(os.environ.get("PORT", "8443"))  # Порт для работы, по умолчанию 8443
     RENDER_EXTERNAL_URL = os.environ.get("RENDER_EXTERNAL_URL")  # Получение URL от Render
 
     if not RENDER_EXTERNAL_URL:
@@ -773,9 +776,8 @@ def main():
     # Запуск Webhook
     application.run_webhook(
         listen="0.0.0.0",  # Слушать на всех интерфейсах
-        port=PORT,  # Указанный порт
-        url_path="",  # Пустой путь для Webhook
+        port=PORT,         # Указанный порт
+        url_path="",       # Пустой путь для Webhook
         webhook_url=WEBHOOK_URL,  # Полный URL для Webhook
     )
     logger.info(f"Бот успешно запущен через Webhook: {WEBHOOK_URL}")
-
